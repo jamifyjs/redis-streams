@@ -32,6 +32,9 @@ createReadStream('image.jpg')
   .pipe(redisClient.writeStream(key))
   .on('finish', done)
 
+// promise version of writeStream
+await writeStreamPromise(createReadStream('image.jpg'), key)
+
 ```
 
 This will extend the `IORedis client` class with two additional functions:
@@ -39,6 +42,8 @@ This will extend the `IORedis client` class with two additional functions:
 `readStream(key)` - Get a [Readable stream](https://nodejs.org/api/stream.html#stream_class_stream_readable) from redis.
 
 `writeStream(key)` - Get a [Writable stream](https://nodejs.org/api/stream.html#stream_class_stream_writable) from redis.
+
+`writeStreamPromise(rstream, key)` - Promise version of `writeStream(key)`
 
 ## Utility Functions
 

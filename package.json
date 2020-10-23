@@ -1,6 +1,6 @@
 {
   "name": "@jamify/redis-streams",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "license": "MIT",
   "author": "styxlab",
   "description": "Stream data to Redis with TypeScript",
@@ -11,6 +11,10 @@
     "stream",
     "ioredis"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamifyjs/redis-streams"
+  },
   "scripts": {
     "test": "jest --coverage --detectOpenHandles --forceExit",
     "test:watch": "jest --coverage --watchAll",
@@ -22,7 +26,6 @@
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
     "prepare": "yarn build",
-    "prepublishOnly": "yarn test && yarn lint",
     "preversion": "yarn lint",
     "version": "yarn format && git add -A src",
     "postversion": "git push && git push --tags"

@@ -48,18 +48,11 @@ test('should record byteLength during writing', async () => {
     const client = new StreamIORedis()
     const stream = createReadStream(`${absolutePathSource}-01.jpg`)
 
-    const p1 = new Promise((resolve) => {
-      stream.pipe(client.writeStream(key))
-        .on('finish', function () {
-          resolve('done writing')
-        })
-    })
+    const p1 = client.writeStreamPromise(stream, key)
     const p2 = byteLength(stream)
 
-    if ('done writing' === await p1) {
-      return await p2
-    }
-    return 0
+    await p1
+    return await p2
   }
 
   expect(await streamToRedis("keytoSaveTo-1")).toBe(8773834)
