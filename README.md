@@ -1,7 +1,7 @@
 # redis-streams
 
-Extends the Redis client [ioredis](https://github.com/luin/ioredis) with streaming functions.
-This library allows to read and write data into Redis via node streams. The implementation is
+Extends the redis client [ioredis](https://github.com/luin/ioredis) with streaming functions.
+This library allows to read and write data into redis via node streams. The implementation is
 mainly a port of redis-rstream and redis-wstream by [@jeffbski](https://github.com/jeffbski)
 to modern TypeScript.The library also exports two utility functions for calculating
 the _byte size_ and _sha1 digest_ during streaming.
@@ -14,7 +14,7 @@ were ~ 20% for writing into the redis cache and insignificant gains during readi
 ## Installation
 
 ```
-yarn install @jamify/redis-streams
+yarn add @jamify/redis-streams
 ```
 
 ## Quick start
@@ -25,12 +25,12 @@ import { StreamIORedis } from '@jamify/redis-streams'
 const redisClient = StreamIORedis()
 
 redisClient.readStream(key)
-	.pipe(createWriteStream('image.jpg'))
-    .on('finish', done)
+  .pipe(createWriteStream('image.jpg'))
+  .on('finish', done)
 
 createReadStream('image.jpg')
-	.pipe(redisClient.writeStream(key))
-    .on('finish', done)
+  .pipe(redisClient.writeStream(key))
+  .on('finish', done)
 
 ```
 
