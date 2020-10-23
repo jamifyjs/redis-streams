@@ -1,10 +1,9 @@
 {
-  "name": "redis-streams",
-  "version": "1.0.0",
-  "private": true,
+  "name": "@jamify/redis-streams",
+  "version": "1.0.1",
   "license": "MIT",
   "author": "styxlab",
-  "description": "Stream data from and to Redis.",
+  "description": "Stream data to Redis with TypeScript",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "keywords": [
