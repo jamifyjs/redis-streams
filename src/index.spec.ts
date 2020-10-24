@@ -1,9 +1,7 @@
-import { StreamIORedis } from './index'
+import { StreamIORedis, byteLength, digest } from './index'
 import { createWriteStream, createReadStream } from 'fs'
 import { PassThrough } from 'stream'
 import crypto from 'crypto'
-import { byteLength } from './size'
-import { digest } from './digest'
 
 const absolutePathSource = './images/photo-1603401209268-11752b61f182'
 
@@ -27,20 +25,11 @@ test('should return done writing with buffer', async () => {
 })
 
 test('should return done writing with stream', async () => {
-  const streamToRedis = async (key: string): Promise<string> => {
-    const client = new StreamIORedis()
+  const client = new StreamIORedis()
 
-    return await new Promise((resolve) => {
-      const stream = client.writeStream(key)
-      createReadStream(`${absolutePathSource}-01.jpg`)
-        .pipe(stream)
-        .on('finish', function () {
-          resolve('done writing')
-        })
-    })
-  }
-
-  expect(await streamToRedis("keytoSaveTo-1")).toBe('done writing')
+  const stream = createReadStream(`${absolutePathSource}-01.jpg`)
+  const p = client.writeStreamPromise(stream, "keytoSaveTo-1")
+  expect(p).resolves.not.toThrow()
 })
 
 test('should record byteLength during writing', async () => {
@@ -79,7 +68,6 @@ test('should record digest HASHA during writing', async () => {
 
   expect(await streamToRedis("keytoSaveTo-1")).toBe('8269ea228b794d557d3dc2c6682c5715f4f9ec2f')
 })
-
 
 test('should return done reading with buffer', async () => {
   const bufferFromRedis = async (key: string): Promise<string> => {
