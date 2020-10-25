@@ -20,7 +20,7 @@ export class StreamIORedis extends IORedis {
   }
 
   writeStreamPromise(stream: Readable, key?: string | null, options?: StreamOptions): Promise<RedisWStream> {
-    const wstream = this.writeStream(key, { algorithm: 'sha1', ...options })
+    const wstream = this.writeStream(key, options)
     return new Promise(
       resolve => pipeline(stream, wstream, () => resolve(wstream))
     )

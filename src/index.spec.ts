@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import { imageSize } from './utils'
 
 const absolutePathSource = './images/photo-1603401209268-11752b61f182'
+const absolutePathSource2 = './images/gatsby-astronaut'
 
 /**
  *  Tests for writing streams to the redis cache
@@ -39,6 +40,15 @@ test('should return done writing with stream, use digest as own key', async () =
   const p1 = client.writeStreamPromise(stream, null, { algorithm: 'sha1' })
   const { redisDigest, redisLength } = await p1
   expect({ redisDigest, redisLength }).toMatchObject({ redisDigest: "8269ea228b794d557d3dc2c6682c5715f4f9ec2f", redisLength: 8773834 })
+})
+
+test('should return done writing with stream, use digest as own key, different pic', async () => {
+  const client = new StreamIORedis()
+  const stream = createReadStream(`${absolutePathSource2}-00.png`)
+
+  const p1 = client.writeStreamPromise(stream, null, { algorithm: 'sha1' })
+  const { redisDigest, redisLength } = await p1
+  expect({ redisDigest, redisLength }).toMatchObject({ redisDigest: "a8e42a27a00303230dfb8a99cb5a0313329d82d9", redisLength: 167273 })
 })
 
 test('should determine image dimensions during writing', async () => {
@@ -78,7 +88,6 @@ test('should return done reading with stream', async () => {
   const streamToRedis = await new Promise((resolve) => {
     pipeline(rstream, wstream, () => resolve('done reading'))
   })
-
   expect({ streamToRedis, redisLength: rstream.redisLength }).toMatchObject({ streamToRedis: "done reading", redisLength: 8773834 })
 })
 
