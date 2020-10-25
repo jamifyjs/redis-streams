@@ -1,27 +1,27 @@
-import { StreamIORedis, byteLength, digest } from './index'
+import { StreamIORedis, ImageSizeResult } from './index'
 import { createWriteStream, createReadStream } from 'fs'
-import { PassThrough } from 'stream'
+import { PassThrough, pipeline } from 'stream'
 import crypto from 'crypto'
+import { imageSize } from './utils'
 
 const absolutePathSource = './images/photo-1603401209268-11752b61f182'
 
+/**
+ *  Tests for writing streams to the redis cache
+ */
+
 test('should return done writing with buffer', async () => {
+  const client = new StreamIORedis()
 
-  const bufferToRedis = async (key: string): Promise<string> => {
-    const client = new StreamIORedis()
-
-    const stream = createReadStream(`${absolutePathSource}-00.jpg`)
-    const chunks: Uint8Array[] = []
-    for await (const chunk of stream) {
-      chunks.push(chunk)
-    }
-    const buffer = Buffer.concat(chunks)
-    client.setBuffer(key, buffer)
-
-    return 'done writing'
+  const stream = createReadStream(`${absolutePathSource}-00.jpg`)
+  const chunks: Uint8Array[] = []
+  for await (const chunk of stream) {
+    chunks.push(chunk)
   }
+  const buffer = Buffer.concat(chunks)
+  client.setBuffer("keytoSaveTo-buffer-1", buffer)
 
-  expect(await bufferToRedis("keytoSaveTo-buffer-1")).toBe('done writing')
+  expect(buffer.byteLength).toBe(8773834)
 })
 
 test('should return done writing with stream', async () => {
@@ -29,128 +29,83 @@ test('should return done writing with stream', async () => {
 
   const stream = createReadStream(`${absolutePathSource}-01.jpg`)
   const p = client.writeStreamPromise(stream, "keytoSaveTo-1")
-  expect(p).resolves.not.toThrow()
+  expect((await p).redisLength).toBe(8773834)
 })
 
-test('should record byteLength during writing', async () => {
-  const streamToRedis = async (key: string): Promise<number> => {
-    const client = new StreamIORedis()
-    const stream = createReadStream(`${absolutePathSource}-01.jpg`)
+test('should return done writing with stream, use digest as own key', async () => {
+  const client = new StreamIORedis()
+  const stream = createReadStream(`${absolutePathSource}-01.jpg`)
 
-    const p1 = client.writeStreamPromise(stream, key)
-    const p2 = byteLength(stream)
-
-    await p1
-    return await p2
-  }
-
-  expect(await streamToRedis("keytoSaveTo-1")).toBe(8773834)
+  const p1 = client.writeStreamPromise(stream, null, { algorithm: 'sha1' })
+  const { redisDigest, redisLength } = await p1
+  expect({ redisDigest, redisLength }).toMatchObject({ redisDigest: "8269ea228b794d557d3dc2c6682c5715f4f9ec2f", redisLength: 8773834 })
 })
 
-test('should record digest HASHA during writing', async () => {
-  const streamToRedis = async (key: string): Promise<string> => {
-    const client = new StreamIORedis()
-    const stream = createReadStream(`${absolutePathSource}-01.jpg`)
+test('should determine image dimensions during writing', async () => {
+  const client = new StreamIORedis()
+  const stream = createReadStream(`${absolutePathSource}-01.jpg`)
 
-    const p1 = new Promise((resolve) => {
-      stream.pipe(client.writeStream(key))
-        .on('finish', function () {
-          resolve('done writing')
-        })
-    })
-    const p2 = digest(stream)
+  const p1 = client.writeStreamPromise(stream, "keytoSaveTo-1")
+  const p2 = imageSize(stream)
 
-    if ('done writing' === await p1) {
-      return await p2
-    }
-    return ''
-  }
-
-  expect(await streamToRedis("keytoSaveTo-1")).toBe('8269ea228b794d557d3dc2c6682c5715f4f9ec2f')
+  await p1
+  expect(await p2).toMatchObject({ "hUnits": "px", "height": 2642, "mime": "image/jpeg", "type": "jpg", "wUnits": "px", "width": 4466 })
 })
+
+/**
+ *  Tests for reading streams from the redis cache
+ */
 
 test('should return done reading with buffer', async () => {
-  const bufferFromRedis = async (key: string): Promise<string> => {
-    const client = new StreamIORedis()
+  const client = new StreamIORedis()
+  const stream = createWriteStream(`${absolutePathSource}-10.jpg`)
+  const buffer = await client.getBuffer("keytoSaveTo-buffer-1")
 
-    return await new Promise(async (resolve) => {
-      const stream = createWriteStream(`${absolutePathSource}-10.jpg`)
-      const buffer = await client.getBuffer(key)
-      stream.write(buffer)
-      stream.on('finish', () => {
-        resolve('done reading')
-      })
-      stream.end()
-    })
-  }
+  const streamToRedis = new Promise(async (resolve) => {
+    stream.write(buffer)
+    stream.on('finish', () => resolve('done reading'))
+    stream.end()
+  })
 
-  expect(await bufferFromRedis("keytoSaveTo-buffer-1")).toBe('done reading')
+  expect(await streamToRedis).toBe('done reading')
 })
 
 test('should return done reading with stream', async () => {
-  const streamFromRedis = async (key: string): Promise<string> => {
-    const client = new StreamIORedis()
+  const client = new StreamIORedis()
+  const rstream = client.readStream("keytoSaveTo-1")
+  const wstream = createWriteStream(`${absolutePathSource}-11.jpg`)
 
-    return await new Promise((resolve) => {
-      client.readStream(key)
-        .pipe(createWriteStream(`${absolutePathSource}-11.jpg`))
-        .on('finish', function () {
-          resolve('done reading')
-        })
-    })
-  }
+  const streamToRedis = await new Promise((resolve) => {
+    pipeline(rstream, wstream, () => resolve('done reading'))
+  })
 
-  const result = await streamFromRedis("keytoSaveTo-1")
-  expect(result).toBe('done reading')
+  expect({ streamToRedis, redisLength: rstream.redisLength }).toMatchObject({ streamToRedis: "done reading", redisLength: 8773834 })
 })
 
-test('should record byteLength during reading', async () => {
-  const streamToRedis = async (key: string): Promise<number> => {
+test('should determine image dimensions during reading', async () => {
+  const streamToRedis = async (key: string): Promise<ImageSizeResult | null> => {
     const client = new StreamIORedis()
     const stream = client.readStream(key)
 
     const p1 = new Promise((resolve) => {
-      stream
-        .pipe(createWriteStream(`${absolutePathSource}-12.jpg`))
-        .on('finish', function () {
-          resolve('done reading')
-        })
+      const wstream = createWriteStream(`${absolutePathSource}-14.jpg`)
+      pipeline(stream, wstream, () => resolve('done reading'))
     })
-    const p2 = byteLength(stream)
+    const p2 = imageSize(stream)
 
     if ('done reading' === await p1) {
       return await p2
     }
-    return 0
+    return null
   }
 
-  expect(await streamToRedis("keytoSaveTo-1")).toBe(8773834)
+  expect(await streamToRedis("keytoSaveTo-1")).toMatchObject({ "hUnits": "px", "height": 2642, "mime": "image/jpeg", "type": "jpg", "wUnits": "px", "width": 4466 })
 })
 
-test('should record digest HASHA during reading', async () => {
-  const streamToRedis = async (key: string): Promise<string> => {
-    const client = new StreamIORedis()
-    const stream = client.readStream(key)
+/**
+ *  Replicate some of the original wstream tests
+ */
 
-    const p1 = new Promise((resolve) => {
-      stream
-        .pipe(createWriteStream(`${absolutePathSource}-13.jpg`))
-        .on('finish', function () {
-          resolve('done reading')
-        })
-    })
-    const p2 = digest(stream)
-
-    if ('done reading' === await p1) {
-      return await p2
-    }
-    return ''
-  }
-
-  expect(await streamToRedis("keytoSaveTo-1")).toBe('8269ea228b794d557d3dc2c6682c5715f4f9ec2f')
-})
-
-// replicate original wstrem tests
 const KEY = 'foo'
 
 test('basic use with string, stream data is stored and finish is fired', function (done) {
@@ -266,5 +221,5 @@ test('all arguments missing for factory, throws error', function () {
     const key = ''
     client.writeStream(key)
   }
-  expect(() => { throwsErr() }).toThrow('RedisWStream requires client and key')
+  expect(() => { throwsErr() }).toThrow('RedisWStream requires client, key or options.algorithm')
 })

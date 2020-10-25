@@ -1,6 +1,6 @@
 {
   "name": "@jamify/redis-streams",
-  "version": "1.0.4",
+  "version": "1.2.0",
   "license": "MIT",
   "author": "styxlab",
   "description": "Stream data to Redis with TypeScript",
@@ -31,9 +31,10 @@
     "postversion": "git push && git push --tags"
   },
   "dependencies": {
+    "@types/probe-image-size": "^5.0.1",
     "fs": "^0.0.1-security",
-    "hasha": "^5.2.2",
     "ioredis": "^4.17.3",
+    "probe-image-size": "^5.0.0",
     "stream": "^0.0.2"
   },
   "devDependencies": {
