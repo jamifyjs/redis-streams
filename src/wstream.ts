@@ -15,7 +15,7 @@ export interface StreamOptions extends stream.WritableOptions {
 
 export class RedisWStream extends stream.Writable {
   redisClient: IORedis.Redis
-  redisKey?: string | null
+  redisKey: string | null
   redisTempKey: string
   redisMaxBytes?: number
   redisTTL?: number
@@ -24,7 +24,7 @@ export class RedisWStream extends stream.Writable {
   redisDigest?: string
   redisLength: number
 
-  constructor(redisClient: IORedis.Redis, key?: string | null, { highWaterMark, clientMulti, algorithm, maxBytes, ttl }: StreamOptions = {}) {
+  constructor(redisClient: IORedis.Redis, key: string | null, { highWaterMark, clientMulti, algorithm, maxBytes, ttl }: StreamOptions = {}) {
     if (!(redisClient && (key || algorithm))) throw new Error('RedisWStream requires client, key or options.algorithm')
     super({ highWaterMark })
 

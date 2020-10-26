@@ -53,11 +53,11 @@ await writeStreamPromise(createReadStream('image.jpg'), null, { algorithm: 'sha1
 
 This will extend the `IORedis client` class with two additional functions:
 
-`readStream(key): RedisRStream` - Get a [Readable stream](https://nodejs.org/api/stream.html#stream_class_stream_readable) from redis.
+`readStream(key, options?): RedisRStream` - Get a [Readable stream](https://nodejs.org/api/stream.html#stream_class_stream_readable) from redis.
 
-`writeStream(key?, options?): RedisWStream` - Get a [Writable stream](https://nodejs.org/api/stream.html#stream_class_stream_writable) from redis.
+`writeStream(key, options?): RedisWStream` - Get a [Writable stream](https://nodejs.org/api/stream.html#stream_class_stream_writable) from redis.
 
-`writeStreamPromise(rstream, key?, options?): Promise<RedisWStream>` - Promise version of `writeStream(key)`
+`writeStreamPromise(rstream, key, options?): Promise<RedisWStream>` - Promise version of `writeStream(key)`
 
 ### Options for RedisRStream:
 
