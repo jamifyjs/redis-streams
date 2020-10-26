@@ -48,7 +48,7 @@ export class RedisWStream extends stream.Writable {
       this.redisLength = length
       this.redisCrypto?.update(chunk)
       this.redisMaxBytes && (length > this.redisMaxBytes)
-        ? cb(new Error(`Write Stream exceeded maximum length of ${this.redisMaxBytes} bytes`))
+        ? cb(new Error(`Write Stream exceeded maximum allowed length of ${this.redisMaxBytes} bytes`))
         : cb()
     })
   }

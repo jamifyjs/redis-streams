@@ -56,7 +56,7 @@ test('should return throw error as picture exceeds maximum bytes', async () => {
   const maxBytes = 10240 // 10 kB
 
   const p1 = client.writeStreamPromise(stream, null, { algorithm: 'sha1', maxBytes })
-  expect(p1).rejects.toThrowError(`Write Stream exceeded maximum length of ${maxBytes} bytes`)
+  expect(p1).rejects.toThrowError(`Write Stream exceeded maximum allowed length of ${maxBytes} bytes`)
 })
 
 test('should set ttl', async () => {

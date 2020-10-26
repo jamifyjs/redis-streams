@@ -3,21 +3,21 @@
 Extends the redis client [ioredis](https://github.com/luin/ioredis) with streaming functions.
 This library allows to read and write data into redis via node streams. The implementation is
 inspired by redis-rstream and redis-wstream by [@jeffbski](https://github.com/jeffbski) and
-has been simplified and made type safe with TypeScript. This library can be conveniently used
-with async/await promise syntax.
+has been simplified, made type safe with TypeScript and includes additional features.
+This library can be conveniently used with async/await promise syntax.
 
 The write stream has ben enhanced to include automatic generation of cryptographic hashes
 such as _sha1_ and others. Furthermore the redis key can be automatically set to the
 self-generated hash to allow for integrity checks and easy lookups.
 
-If the maxBytes option is set on the write stream, an exception is thown if the stream
+If the maxBytes option is set on the write stream, an exception is thrown if the stream
 exceeds that upper limit. You can also set the TTL option, in order to automatically remove
-the data from the cache once the TTL is expired.
+the data from the cache once the key is expired.
 
 The main benefit of streaming is more efficient memory usage and safe-guards against buffer overflows.
 Performance gains vary based on your hardware and depend on both data and chunk sizes. The default
 chunk size has been set to 1 MB and can be changed through the options. Performance gains in my tests
-were ~ 20% for writing into the redis cache and insignificant during reading from redis.
+were approximately 20% for writing into the redis cache and insignificant during reading from the cache.
 
 ## Installation
 
@@ -58,6 +58,26 @@ This will extend the `IORedis client` class with two additional functions:
 `writeStream(key?, options?): RedisWStream` - Get a [Writable stream](https://nodejs.org/api/stream.html#stream_class_stream_writable) from redis.
 
 `writeStreamPromise(rstream, key?, options?): Promise<RedisWStream>` - Promise version of `writeStream(key)`
+
+### Options for RedisRStream:
+
+```
+{ 
+  highWaterMark, // maximum internal buffer size
+}
+```
+
+### Options for RedisWStream:
+
+```
+{ 
+ highWaterMark, // maximum internal buffer size
+ clientMulti,   // attach redis.multi in order to defer key rename
+ algorithm,     // crypto algorithm for hashing
+ maxBytes,      // maximum allowed bytes for writing
+ ttl            // key expire time in seconds
+}
+```
 
 ## Unit testing
 
