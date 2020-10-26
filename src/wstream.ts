@@ -37,9 +37,11 @@ export class RedisWStream extends stream.Writable {
   }
 
   _write(chunk: string | Buffer, encoding: BufferEncoding, cb: (error?: Error | null) => void): void {
-    this.redisClient.append(this.redisTempKey, chunk, error => cb(error))
+    this.redisClient.append(this.redisTempKey, chunk, (error, length) => {
+      this.redisLength = length
+      cb(error)
+    })
     this.redisCrypto?.update(chunk)
-    this.redisLength += chunk.length
   }
 
   _final(cb: (error?: Error | null) => void): void {
