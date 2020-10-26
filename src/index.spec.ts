@@ -1,8 +1,7 @@
-import { StreamIORedis, ImageSizeResult } from './index'
+import { StreamIORedis } from './index'
 import { createWriteStream, createReadStream } from 'fs'
 import { PassThrough, pipeline } from 'stream'
 import crypto from 'crypto'
-import { imageSize } from './utils'
 
 const absolutePathSource = './images/photo-1603401209268-11752b61f182'
 const absolutePathSource2 = './images/gatsby-astronaut'
@@ -51,15 +50,23 @@ test('should return done writing with stream, use digest as own key, different p
   expect({ redisDigest, redisLength }).toMatchObject({ redisDigest: "a8e42a27a00303230dfb8a99cb5a0313329d82d9", redisLength: 167273 })
 })
 
-test('should determine image dimensions during writing', async () => {
+test('should return throw error as picture exceeds maximum bytes', async () => {
   const client = new StreamIORedis()
   const stream = createReadStream(`${absolutePathSource}-01.jpg`)
+  const maxBytes = 10240 // 10 kB
 
-  const p1 = client.writeStreamPromise(stream, "keytoSaveTo-1")
-  const p2 = imageSize(stream)
+  const p1 = client.writeStreamPromise(stream, null, { algorithm: 'sha1', maxBytes })
+  expect(p1).rejects.toThrowError(`Write Stream exceeded maximum length of ${maxBytes} bytes`)
+})
 
-  await p1
-  expect(await p2).toMatchObject({ "hUnits": "px", "height": 2642, "mime": "image/jpeg", "type": "jpg", "wUnits": "px", "width": 4466 })
+test('should set ttl', async () => {
+  const client = new StreamIORedis()
+  const stream = createReadStream(`${absolutePathSource}-01.jpg`)
+  const ttl = 60 //seconds
+
+  await client.writeStreamPromise(stream, "disposeThisKeyAfter60secs", { ttl })
+  const currentTTL = await client.ttl("disposeThisKeyAfter60secs")
+  expect(currentTTL).toBeLessThanOrEqual(ttl)
 })
 
 /**
@@ -89,26 +96,6 @@ test('should return done reading with stream', async () => {
     pipeline(rstream, wstream, () => resolve('done reading'))
   })
   expect({ streamToRedis, redisLength: rstream.redisLength }).toMatchObject({ streamToRedis: "done reading", redisLength: 8773834 })
-})
-
-test('should determine image dimensions during reading', async () => {
-  const streamToRedis = async (key: string): Promise<ImageSizeResult | null> => {
-    const client = new StreamIORedis()
-    const stream = client.readStream(key)
-
-    const p1 = new Promise((resolve) => {
-      const wstream = createWriteStream(`${absolutePathSource}-14.jpg`)
-      pipeline(stream, wstream, () => resolve('done reading'))
-    })
-    const p2 = imageSize(stream)
-
-    if ('done reading' === await p1) {
-      return await p2
-    }
-    return null
-  }
-
-  expect(await streamToRedis("keytoSaveTo-1")).toMatchObject({ "hUnits": "px", "height": 2642, "mime": "image/jpeg", "type": "jpg", "wUnits": "px", "width": 4466 })
 })
 
 /**

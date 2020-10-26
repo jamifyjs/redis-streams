@@ -34,7 +34,6 @@
     "@types/probe-image-size": "^5.0.1",
     "fs": "^0.0.1-security",
     "ioredis": "^4.17.3",
-    "probe-image-size": "^5.0.0",
     "stream": "^0.0.2"
   },
   "devDependencies": {

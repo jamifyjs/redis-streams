@@ -7,8 +7,12 @@ has been simplified and made type safe with TypeScript. This library can be conv
 with async/await promise syntax.
 
 The write stream has ben enhanced to include automatic generation of cryptographic hashes
-such as 'sha1' and others. Furthermore the redisKey can be automatically set to the self-generated hash
-to allow for integrity checks and easy lookups.
+such as _sha1_ and others. Furthermore the redis key can be automatically set to the
+self-generated hash to allow for integrity checks and easy lookups.
+
+If the maxBytes option is set on the write stream, an exception is thown if the stream
+exceeds that upper limit. You can also set the TTL option, in order to automatically remove
+the data from the cache once the TTL is expired.
 
 The main benefit of streaming is more efficient memory usage and safe-guards against buffer overflows.
 Performance gains vary based on your hardware and depend on both data and chunk sizes. The default
@@ -26,7 +30,7 @@ yarn add @jamify/redis-streams
 ```
 import { StreamIORedis } from '@jamify/redis-streams'
 
-const redisClient = StreamIORedis()
+const redisClient = new StreamIORedis()
 
 redisClient.readStream(key)
   .pipe(createWriteStream('image.jpg'))
@@ -42,29 +46,18 @@ await writeStreamPromise(createReadStream('image.jpg'), key)
 // Save to auto generated sha1 key
 await writeStreamPromise(createReadStream('image.jpg'), null, { algorithm: 'sha1' })
 
+// Throw exception, if maxBytes is exceeded
+await writeStreamPromise(createReadStream('image.jpg'), null, { algorithm: 'sha1', maxBytes: 10240 })
+
 ```
 
 This will extend the `IORedis client` class with two additional functions:
 
-`readStream(key)` - Get a [Readable stream](https://nodejs.org/api/stream.html#stream_class_stream_readable) from redis.
+`readStream(key): RedisRStream` - Get a [Readable stream](https://nodejs.org/api/stream.html#stream_class_stream_readable) from redis.
 
-`writeStream(key?, options?)` - Get a [Writable stream](https://nodejs.org/api/stream.html#stream_class_stream_writable) from redis.
+`writeStream(key?, options?): RedisWStream` - Get a [Writable stream](https://nodejs.org/api/stream.html#stream_class_stream_writable) from redis.
 
-`writeStreamPromise(rstream, key?, options?)` - Promise version of `writeStream(key)`
-
-## Utility Functions
-
-```
-import { byteLength, digest } from '@jamify/redis-streams'
-
-const redisClient = StreamIORedis()
-
-const rstream = redisClient.readStream(key)
-
-const size = await byteLength(rstream)
-const digest = await digest(rstream)
-
-```
+`writeStreamPromise(rstream, key?, options?): Promise<RedisWStream>` - Promise version of `writeStream(key)`
 
 ## Unit testing
 

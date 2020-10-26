@@ -3,8 +3,6 @@ import { Readable, pipeline } from 'stream'
 import { RedisRStream } from './rstream'
 import { RedisWStream, StreamOptions } from './wstream'
 
-export { imageSize, ImageSizeResult } from './utils'
-
 export class StreamIORedis extends IORedis {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(...args: any[]) {
@@ -21,9 +19,8 @@ export class StreamIORedis extends IORedis {
 
   writeStreamPromise(stream: Readable, key?: string | null, options?: StreamOptions): Promise<RedisWStream> {
     const wstream = this.writeStream(key, options)
-    return new Promise(
-      resolve => pipeline(stream, wstream, () => resolve(wstream))
-    )
+    return new Promise((resolve, reject) => {
+      pipeline(stream, wstream, error => error ? reject(error) : resolve(wstream))
+    })
   }
-
 }
