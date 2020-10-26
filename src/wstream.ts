@@ -46,11 +46,11 @@ export class RedisWStream extends stream.Writable {
     this.redisClient.append(this.redisTempKey, chunk, (error, length) => {
       if(error) return cb(error)
       this.redisLength = length
+      this.redisCrypto?.update(chunk)
       this.redisMaxBytes && (length > this.redisMaxBytes)
         ? cb(new Error(`Write Stream exceeded maximum length of ${this.redisMaxBytes} bytes`))
         : cb()
     })
-    this.redisCrypto?.update(chunk)
   }
 
   _final(cb: (error?: Error | null) => void): void {
@@ -65,5 +65,9 @@ export class RedisWStream extends stream.Writable {
     this.redisClientMulti?.rename(this.redisTempKey, key, error => expire(key, error))
       ? cb()
       : this.redisClient.rename(this.redisTempKey, key, error => expire(key, error))
+  }
+
+  _destroy(error: Error | null, callback: (error?: Error | null) => void): void {
+    this.redisClient.del(this.redisTempKey, callback)
   }
 }

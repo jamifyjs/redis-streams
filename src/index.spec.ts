@@ -219,3 +219,9 @@ test('all arguments missing for factory, throws error', function () {
   }
   expect(() => { throwsErr() }).toThrow('RedisWStream requires client, key or options.algorithm')
 })
+
+test('no dangling temp keys', async function () {
+  const client = new StreamIORedis()
+  const [,tempKeys] = await client.scan(0, 'match', 'RedisWStream.*')
+  expect(tempKeys.length).toBe(0)
+})
